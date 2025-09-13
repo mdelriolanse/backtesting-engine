@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtesting Engine Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Backtesting Engine Dashboard</h1>
+        
+        <div id="status" class="status info">
+            Checking API connection...
+        </div>
+
+        <div class="grid">
+            <!-- Run Backtest Section -->
+            <div class="section">
+                <h2>🚀 Run Backtest</h2>
+                <form id="backtestForm">
+                    <div class="form-group">
+                        <label for="strategy">Strategy:</label>
+                        <select id="strategy" required>
+                            <option value="moving_average_crossover">Moving Average Crossover</option>
+                            <option value="rsi_strategy">RSI Strategy</option>
+                            <option value="bollinger_bands">Bollinger Bands</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="symbol">Symbol:</label>
+                        <select id="symbol" required>
+                            <option value="AAPL">AAPL</option>
+                            <option value="GOOGL">GOOGL</option>
+                            <option value="MSFT">MSFT</option>
+                            <option value="TSLA">TSLA</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="initialCapital">Initial Capital ($):</label>
+                        <input type="number" id="initialCapital" value="100000" min="1000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="shortPeriod">Short Period (for MA strategy):</label>
+                        <input type="number" id="shortPeriod" value="10" min="5" max="50">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="longPeriod">Long Period (for MA strategy):</label>
+                        <input type="number" id="longPeriod" value="20" min="10" max="200">
+                    </div>
+                    
+                    <button type="submit">Run Backtest</button>
+                </form>
+                
+                <div id="backtestStatus" class="results"></div>
+            </div>
+
+            <!-- View Results Section -->
+            <div class="section">
+                <h2>📊 View Results</h2>
+                <button onclick="loadResults()">Load Recent Results</button>
+                <button onclick="debugBacktestRuns()" style="background-color: #6c757d; margin-left: 10px;">Debug Info</button>
+                <div id="results" class="results"></div>
+            </div>
+        </div>
+
+        <!-- ML Models Section -->
+        <div class="section">
+            <h2>🤖 Machine Learning Models</h2>
+            <div class="form-group">
+                <label for="mlSymbol">Symbol for ML:</label>
+                <select id="mlSymbol">
+                    <option value="AAPL">AAPL</option>
+                    <option value="GOOGL">GOOGL</option>
+                    <option value="MSFT">MSFT</option>
+                    <option value="TSLA">TSLA</option>
+                </select>
+            </div>
+            <button onclick="trainMLModels()">Train ML Models</button>
+            <button onclick="loadMLSignals()">Load ML Signals</button>
+            <div id="mlResults" class="results"></div>
+        </div>
+
+        <!-- Price Data Section -->
+        <div class="section">
+            <h2>📈 Price Data</h2>
+            <div class="form-group">
+                <label for="priceSymbol">Symbol:</label>
+                <select id="priceSymbol">
+                    <option value="AAPL">AAPL</option>
+                    <option value="GOOGL">GOOGL</option>
+                    <option value="MSFT">MSFT</option>
+                    <option value="TSLA">TSLA</option>
+                </select>
+            </div>
+            <button onclick="loadPriceData()">Load Price Data</button>
+            <div id="priceResults" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+            
+            document.getElementById('endDate').value = today.toISOString().split('T')[0];
+            document.getElementById('startDate').value = oneYearAgo.toISOString().split('T')[0];
+            
+            checkAPIHealth();
+        });
+
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    document.getElementById('status').innerHTML = 
+                        '✅ API server is running and healthy';
+                    document.getElementById('status').className = 'status success';
+                } else {
+                    throw new Error('API not healthy');
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    '❌ API server is not running. Please start it with: <code>python main_simple.py api</code>';
+                document.getElementById('status').className = 'status error';
+            }
+        }
+
+        async function runBacktest() {
+            const strategy = document.getElementById('strategy').value;
+            const payload = {
+                strategy: strategy,
+                symbol: document.getElementById('symbol').value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                initial_capital: parseFloat(document.getElementById('initialCapital').value),
+                parameters: {}
+            };
+            
+            // Set strategy-specific parameters
+            if (strategy === 'moving_average_crossover') {
+                payload.parameters = {
+                    short_period: parseInt(document.getElementById('shortPeriod').value),
+                    long_period: parseInt(document.getElementById('longPeriod').value),
+                    lookback: 50
+                };
+            } else if (strategy === 'rsi_strategy') {
+                payload.parameters = {
+                    period: 14,
+                    oversold: 30,
+                    overbought: 70,
+                    lookback: 50
+                };
+            } else if (strategy === 'bollinger_bands') {
+                payload.parameters = {
+                    period: 20,
+                    std_dev: 2.0,
+                    lookback: 50
+                };
+            }
+
+            const statusDiv = document.getElementById('backtestStatus');
+            statusDiv.innerHTML = '<div class="loading">🔄 Starting backtest...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/backtest/run`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    statusDiv.innerHTML = `<div class="status success">✅ Backtest started! Run ID: ${result.id}</div>`;
+                    
+                    // Poll for status
+                    pollBacktestStatus(result.id);
+                } else {
+                    const error = await response.text();
+                    statusDiv.innerHTML = `<div class="status error">❌ Error: ${error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function pollBacktestStatus(runId) {
+            const statusDiv = document.getElementById('backtestStatus');
+            
+            const poll = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/backtest/status/${runId}`);
+                    if (response.ok) {
+                        const status = await response.json();
+                        
+                        if (status.status === 'COMPLETED') {
+                            statusDiv.innerHTML = `<div class="status success">✅ Backtest completed! <button onclick="loadResults()">View Results</button></div>`;
+                            console.log('Backtest completed successfully:', status); // Debug logging
+                        } else if (status.status === 'FAILED') {
+                            statusDiv.innerHTML = `<div class="status error">❌ Backtest failed: ${status.error_message || 'Unknown error'}</div>`;
+                            console.error('Backtest failed:', status); // Debug logging
+                        } else {
+                            statusDiv.innerHTML = `<div class="loading">🔄 Backtest running... (${status.status})</div>`;
+                            setTimeout(poll, 2000);
+                        }
+                    }
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="status error">❌ Error checking status: ${error.message}</div>`;
+                }
+            };
+            
+            poll();
+        }
+
+        async function loadResults() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Loading results...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/results/metrics`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const metrics = data.metrics || [];
+                    
+                    console.log('Results API response:', data); // Debug logging
+                    
+                    if (metrics.length > 0) {
+                        let html = '<h3>Recent Backtest Results</h3><table><tr><th>Strategy</th><th>Symbol</th><th>Total Return</th><th>Sharpe Ratio</th><th>Max Drawdown</th><th>Total Trades</th></tr>';
+                        
+                        metrics.slice(0, 10).forEach(metric => {
+                            html += `<tr>
+                                <td>${metric.strategy}</td>
+                                <td>${metric.symbol}</td>
+                                <td>${(metric.total_return * 100).toFixed(2)}%</td>
+                                <td>${metric.sharpe_ratio ? metric.sharpe_ratio.toFixed(2) : 'N/A'}</td>
+                                <td>${metric.max_drawdown ? (metric.max_drawdown * 100).toFixed(2) + '%' : 'N/A'}</td>
+                                <td>${metric.total_trades}</td>
+                            </tr>`;
+                        });
+                        
+                        html += '</table>';
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <div class="status info">
+                                <h4>No results found</h4>
+                                <p>This could mean:</p>
+                                <ul>
+                                    <li>No backtests have been run yet</li>
+                                    <li>The backtest failed to complete</li>
+                                    <li>Results were not saved properly</li>
+                                </ul>
+                                <p><strong>Try running a backtest first!</strong></p>
+                            </div>`;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    resultsDiv.innerHTML = `<div class="status error">❌ Error loading results (${response.status}): ${errorText}</div>`;
+                }
+            } catch (error) {
+                console.error('Error loading results:', error); // Debug logging
+                resultsDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function debugBacktestRuns() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Loading debug info...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/debug/backtest-runs`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Debug info:', data); // Debug logging
+                    
+                    let html = '<h3>Debug Information</h3>';
+                    html += `<p><strong>Total Runs:</strong> ${data.total_runs}</p>`;
+                    html += `<p><strong>Total Results:</strong> ${data.total_results}</p>`;
+                    
+                    if (data.runs && Object.keys(data.runs).length > 0) {
+                        html += '<h4>Backtest Runs:</h4><table><tr><th>Run ID</th><th>Strategy</th><th>Symbol</th><th>Status</th><th>Created</th></tr>';
+                        Object.values(data.runs).forEach(run => {
+                            html += `<tr>
+                                <td>${run.id.substring(0, 8)}...</td>
+                                <td>${run.strategy}</td>
+                                <td>${run.symbol}</td>
+                                <td>${run.status}</td>
+                                <td>${new Date(run.created_at).toLocaleString()}</td>
+                            </tr>`;
+                        });
+                        html += '</table>';
+                    } else {
+                        html += '<p><em>No backtest runs found</em></p>';
+                    }
+                    
+                    if (data.results && Object.keys(data.results).length > 0) {
+                        html += '<h4>Backtest Results:</h4><table><tr><th>Run ID</th><th>Strategy</th><th>Symbol</th><th>Error</th></tr>';
+                        Object.entries(data.results).forEach(([runId, result]) => {
+                            html += `<tr>
+                                <td>${runId.substring(0, 8)}...</td>
+                                <td>${result.strategy}</td>
+                                <td>${result.symbol}</td>
+                                <td>${result.error || 'None'}</td>
+                            </tr>`;
+                        });
+                        html += '</table>';
+                    } else {
+                        html += '<p><em>No backtest results found</em></p>';
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = '<div class="status error">❌ Error loading debug info</div>';
+                }
+            } catch (error) {
+                console.error('Error loading debug info:', error);
+                resultsDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function trainMLModels() {
+            const symbol = document.getElementById('mlSymbol').value;
+            const resultsDiv = document.getElementById('mlResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Training ML models...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/ml/train/${symbol}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    resultsDiv.innerHTML = `<div class="status success">✅ ${result.message}</div>`;
+                } else {
+                    resultsDiv.innerHTML = '<div class="status error">❌ Error training models</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadMLSignals() {
+            const symbol = document.getElementById('mlSymbol').value;
+            const resultsDiv = document.getElementById('mlResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Loading ML signals...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/ml/signals/${symbol}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const signals = data.signals || [];
+                    
+                    if (signals.length > 0) {
+                        let html = `<h3>ML Signals for ${symbol}</h3><table><tr><th>Timestamp</th><th>Model</th><th>Prediction</th><th>Confidence</th><th>Signal Type</th></tr>`;
+                        
+                        signals.slice(0, 10).forEach(signal => {
+                            html += `<tr>
+                                <td>${new Date(signal.timestamp).toLocaleDateString()}</td>
+                                <td>${signal.model_name}</td>
+                                <td>${signal.prediction.toFixed(4)}</td>
+                                <td>${(signal.confidence * 100).toFixed(1)}%</td>
+                                <td>${signal.signal_type}</td>
+                            </tr>`;
+                        });
+                        
+                        html += '</table>';
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = '<div class="status info">No ML signals found. Train models first!</div>';
+                    }
+                } else {
+                    resultsDiv.innerHTML = '<div class="status error">❌ Error loading signals</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadPriceData() {
+            const symbol = document.getElementById('priceSymbol').value;
+            const resultsDiv = document.getElementById('priceResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Loading price data...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/data/prices/${symbol}?limit=20`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const prices = data.prices || [];
+                    
+                    if (prices.length > 0) {
+                        let html = `<h3>Recent Price Data for ${symbol}</h3><table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>`;
+                        
+                        prices.forEach(price => {
+                            html += `<tr>
+                                <td>${new Date(price.timestamp).toLocaleDateString()}</td>
+                                <td>$${price.open.toFixed(2)}</td>
+                                <td>$${price.high.toFixed(2)}</td>
+                                <td>$${price.low.toFixed(2)}</td>
+                                <td>$${price.close.toFixed(2)}</td>
+                                <td>${price.volume.toLocaleString()}</td>
+                            </tr>`;
+                        });
+                        
+                        html += '</table>';
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = '<div class="status info">No price data found</div>';
+                    }
+                } else {
+                    resultsDiv.innerHTML = '<div class="status error">❌ Error loading price data</div>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Form submission
+        document.getElementById('backtestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            runBacktest();
+        });
+    </script>
+</body>
+</html>
