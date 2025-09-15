@@ -211,6 +211,7 @@ class Portfolio:
         return total_value
 
 class SimpleBacktestingEngine:
+    """Simple backtesting engine with multiple strategies"""
     def __init__(self):
         self.strategies = {
             "moving_average_crossover": MovingAverageCrossover,
