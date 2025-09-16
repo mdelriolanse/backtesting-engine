@@ -17,7 +17,7 @@ import random
 logger = logging.getLogger(__name__)
 
 class SimpleFeatureEngineer:
-    """Simple feature engineering for price data"""
+    """Simple feature engineering for price data with technical indicators"""
     
     @staticmethod
     def create_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
