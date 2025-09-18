@@ -79,7 +79,7 @@ def test_engine():
     return True
 
 def main():
-    """Main entry point"""
+    """Main entry point for the backtesting engine"""
     parser = argparse.ArgumentParser(description='Simple Backtesting Engine')
     parser.add_argument('command', choices=[
         'test', 'api'
