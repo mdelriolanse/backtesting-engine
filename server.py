@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 def main():
+    """Main function to start the HTTP server"""
     # Change to the directory containing this script
     script_dir = Path(__file__).parent
     os.chdir(script_dir)
