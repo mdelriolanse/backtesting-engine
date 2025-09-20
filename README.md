@@ -1,271 +1,161 @@
 # 🤖 AI Backtesting Engine
 
-A comprehensive backtesting engine with machine learning capabilities, built with FastAPI, PostgreSQL, and Streamlit.
+A lightweight, AI-powered backtesting engine built with Python, FastAPI, and scikit-learn. No database required - everything runs in memory for simplicity and speed.
 
 ## 🚀 Features
 
-- **Backtesting Engine**: Run backtests with multiple trading strategies
-- **Machine Learning**: ML models for return and direction prediction
-- **Real-time API**: FastAPI backend with comprehensive endpoints
-- **Interactive Frontend**: Streamlit dashboard for easy interaction
-- **Database**: PostgreSQL for data persistence
-- **Sample Data**: Realistic stock data for testing
+- **AI-Powered Backtesting**: Machine learning models for price prediction and trading signals
+- **Multiple Strategies**: Moving Average Crossover, RSI, and Bollinger Bands
+- **Real-time API**: FastAPI backend with comprehensive REST endpoints
+- **Interactive Frontend**: Clean HTML dashboard with real-time updates
+- **No Database**: In-memory storage for simplicity and fast performance
 
-## 📋 Prerequisites
+## 🧠 AI Capabilities
 
-- Python 3.8+
-- PostgreSQL
-- uv (Python package manager)
+- **Random Forest Models**: Price prediction and direction classification
+- **Feature Engineering**: 18+ technical indicators (MACD, RSI, Bollinger Bands, etc.)
+- **Signal Generation**: BUY/SELL/HOLD recommendations with confidence scores
 
 ## 🛠️ Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd backtesting-engine
-   ```
+### Prerequisites
+- Python 3.8+
+- [uv](https://github.com/astral-sh/uv) package manager
 
-2. **Install dependencies**
-   ```bash
-   uv sync
-   ```
+### Setup
+```bash
+git clone <repository-url>
+cd backtesting-engine
+uv sync
+```
 
-3. **Set up PostgreSQL**
-   - Install PostgreSQL on your system
-   - Create a database named `backtesting_db`
-   - Update `.env` file with your database credentials
-
-4. **Initialize the system**
-   ```bash
-   uv run -- python main.py full-setup
-   ```
-
-## 🎯 Quick Start
+## 🚀 Quick Start
 
 ### 1. Start the API Server
 ```bash
-uv run -- python main.py api
+uv run python main.py api
 ```
-The API will be available at: http://localhost:8000
+API available at `http://localhost:8000`
 
-### 2. Start the Frontend
+### 2. Start the Frontend Server
 ```bash
-uv run -- python run_frontend.py
+uv run python server.py
 ```
-The frontend will be available at: http://localhost:8501
+Dashboard available at `http://localhost:8080`
 
-### 3. Access the Dashboard
-Open your browser and go to: http://localhost:8501
+### 3. Open the Dashboard
+Navigate to `http://localhost:8080` in your browser.
 
-## 📊 Available Strategies
+## 📊 Usage
 
-### Moving Average Crossover
-- **Description**: Buy when short MA crosses above long MA, sell when it crosses below
-- **Parameters**: 
-  - `short_period`: Short moving average period (default: 10)
-  - `long_period`: Long moving average period (default: 20)
-  - `lookback`: Historical data window (default: 50)
-
-### RSI Strategy
-- **Description**: Buy when RSI is oversold, sell when overbought
-- **Parameters**:
-  - `period`: RSI calculation period (default: 14)
-  - `oversold`: Oversold threshold (default: 30)
-  - `overbought`: Overbought threshold (default: 70)
-
-### Bollinger Bands
-- **Description**: Buy when price touches lower band, sell when it touches upper band
-- **Parameters**:
-  - `period`: Moving average period (default: 20)
-  - `std_dev`: Standard deviation multiplier (default: 2.0)
-  - `lookback`: Historical data window (default: 50)
+1. **Select Strategy**: Choose from Moving Average Crossover, RSI, or Bollinger Bands
+2. **Configure Parameters**: Set symbol, date range, initial capital, and strategy parameters
+3. **Run Backtest**: Click "Run Backtest" and monitor progress
+4. **View Results**: See performance metrics, trade history, and visualizations
+5. **Train AI Models**: Click "Train ML Models" for AI-powered signals
 
 ## 🔧 API Endpoints
 
 ### Backtesting
-- `POST /backtest/run` - Run a backtest
-- `GET /backtest/status/{run_id}` - Get backtest status
+- `POST /backtest/run` - Start a new backtest
+- `GET /backtest/status/{run_id}` - Check backtest status
+- `GET /results/metrics` - Get backtest results
 
-### Results
-- `GET /results/metrics` - Get performance metrics
-- `GET /results/trades` - Get trade history
-
-### Machine Learning
-- `POST /ml/train/{symbol}` - Train ML models
-- `GET /ml/signals/{symbol}` - Get ML signals
-- `POST /ml/generate/{symbol}` - Generate new ML signal
+### AI/ML
+- `POST /ml/train/{symbol}` - Train ML models for a symbol
+- `GET /ml/signals/{symbol}` - Get AI-generated signals
 
 ### Data
 - `GET /data/symbols` - Get available symbols
 - `GET /data/prices/{symbol}` - Get price data
-- `POST /data/upload` - Upload price data
 
-## 📈 Frontend Features
+## 🎯 Available Strategies
 
-### Dashboard
-- Overview of system status
-- Recent performance metrics
-- Quick statistics
+### Moving Average Crossover
+- **Parameters**: Short period (default: 10), Long period (default: 20)
+- **Logic**: Buy when short MA crosses above long MA, sell when it crosses below
 
-### Run Backtest
-- Interactive strategy selection
-- Parameter tuning with sliders
-- Real-time progress tracking
-- Results visualization
+### RSI Strategy
+- **Parameters**: Period (default: 14), Oversold (default: 30), Overbought (default: 70)
+- **Logic**: Buy when RSI < oversold, sell when RSI > overbought
 
-### View Results
-- Performance metrics table
-- Interactive charts (Return vs Drawdown)
-- Trade history
-- Filtering by strategy and symbol
+### Bollinger Bands
+- **Parameters**: Period (default: 20), Standard deviation (default: 2.0)
+- **Logic**: Buy when price touches lower band, sell when price touches upper band
 
-### ML Models
-- Train models for specific symbols
-- View ML-generated signals
-- Signal confidence visualization
-- Historical predictions
+## 🤖 AI Model Details
 
-### Price Data
-- Interactive candlestick charts
-- Price statistics
-- Historical data table
+### Feature Engineering
+- **Moving Averages**: SMA (5, 10, 20, 50), EMA (12, 26)
+- **MACD**: Line, signal, histogram
+- **RSI**: 14-period relative strength index
+- **Bollinger Bands**: Position, width, upper/lower bands
+- **Price Changes**: 1-day, 5-day, 10-day returns
+- **Volume**: Volume ratio, SMA
+- **Volatility**: 5-day and 20-day rolling volatility
 
-## 🗄️ Database Schema
+### Model Architecture
+- **Random Forest Regressor**: Price prediction
+- **Random Forest Classifier**: Direction prediction (up/down)
+- **StandardScaler**: Feature normalization
+- **Train/Test Split**: 80/20 split for model evaluation
 
-### Tables
-- **prices**: Historical OHLCV data
-- **trades**: Individual trade records
-- **metrics**: Strategy performance metrics
-- **signals**: ML-generated trading signals
-- **backtest_runs**: Backtest execution metadata
+## 📈 Example Usage
 
-## 📁 Project Structure
+### Python API
+```python
+import requests
 
-```
-backtesting-engine/
-├── src/                    # Source code
-│   ├── api.py             # FastAPI endpoints
-│   ├── database.py        # Database connection
-│   ├── models.py          # SQLAlchemy models
-│   ├── ml_layer.py        # Machine learning
-│   ├── data_ingestion.py  # Data loading
-│   ├── backtesting_engine.cpp  # C++ engine
-│   ├── strategy.h         # Strategy definitions
-│   └── portfolio.h        # Portfolio management
-├── examples/              # Sample data
-│   └── data/             # CSV files
-├── database/             # Database schema
-├── frontend.py           # Streamlit frontend
-├── main.py              # Main entry point
-└── requirements.txt     # Dependencies
+# Start a backtest
+response = requests.post('http://localhost:8000/backtest/run', json={
+    "strategy": "moving_average_crossover",
+    "symbol": "AAPL",
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "initial_capital": 100000,
+    "parameters": {
+        "short_period": 10,
+        "long_period": 20
+    }
+})
+
+# Train AI models
+requests.post('http://localhost:8000/ml/train/AAPL')
+
+# Get AI signals
+signals = requests.get('http://localhost:8000/ml/signals/AAPL')
 ```
 
-## 🔧 Configuration
-
-### Environment Variables (.env)
-```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=backtesting_db
-DB_USER=postgres
-DB_PASSWORD=your_password
-
-# API Configuration
-API_HOST=0.0.0.0
-API_PORT=8000
-API_DEBUG=True
-
-# C++ Engine Configuration
-CPP_ENGINE_PATH=./build/backtesting_engine
-```
-
-## 🚀 Commands
-
-### Main Commands
+### Command Line
 ```bash
-# Initialize database
-uv run -- python main.py init
-
-# Load sample data
-uv run -- python main.py load-data
-
-# Train ML models
-uv run -- python main.py train-ml
+# Test the backtesting engine
+uv run python main.py test
 
 # Start API server
-uv run -- python main.py api
-
-# Full setup (init + load-data + train-ml)
-uv run -- python main.py full-setup
+uv run python main.py api
 ```
 
-### Frontend
-```bash
-# Start Streamlit frontend
-uv run -- python run_frontend.py
-```
+## 🔍 Debugging
 
-## 📊 Sample Data
+- Click "Debug Info" in the frontend to see backtest runs and results
+- Check the API logs for detailed execution information
+- Use the `/debug/backtest-runs` endpoint for programmatic debugging
 
-The system includes realistic sample data for:
-- **AAPL** (Apple Inc.)
-- **GOOGL** (Alphabet Inc.)
-- **MSFT** (Microsoft Corporation)
-- **TSLA** (Tesla Inc.)
+## 📋 Dependencies
 
-Each symbol has 2 years of daily OHLCV data with realistic price movements and volume patterns.
+- **FastAPI**: Web framework for the API
+- **uvicorn**: ASGI server
+- **scikit-learn**: Machine learning models
+- **pandas**: Data manipulation
+- **numpy**: Numerical computing
 
-## 🤖 Machine Learning
+## 🎯 Performance
 
-### Models
-- **Return Prediction**: Random Forest regressor for predicting next-day returns
-- **Direction Prediction**: Random Forest classifier for predicting price direction
+- **Backtests**: Complete in seconds for 1-year periods
+- **ML Training**: ~2-3 seconds for 2 years of daily data
+- **Memory Usage**: Minimal - all data stored in memory
+- **API Response**: Sub-second response times for most endpoints
 
-### Features
-- Technical indicators (SMA, EMA, RSI, MACD, Bollinger Bands)
-- Lag features (1, 2, 3, 5 days)
-- Volume indicators
-- Price momentum
+---
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failed**
-   - Ensure PostgreSQL is running
-   - Check database credentials in `.env`
-   - Verify database `backtesting_db` exists
-
-2. **API Server Not Starting**
-   - Check if port 8000 is available
-   - Verify all dependencies are installed
-   - Check logs for specific errors
-
-3. **Frontend Not Loading**
-   - Ensure API server is running on port 8000
-   - Check if port 8501 is available
-   - Verify Streamlit is installed
-
-4. **No Data Available**
-   - Run `uv run -- python main.py load-data`
-   - Check if sample data files exist in `examples/data/`
-
-## 📝 License
-
-This project is licensed under the MIT License.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📞 Support
-
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the API documentation at http://localhost:8000/docs
-3. Open an issue on GitHub
+**Built with ❤️ using Python, FastAPI, and AI/ML technologies**
