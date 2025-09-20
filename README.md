@@ -1,4 +1,4 @@
-# 📈 Backtesting Engine
+# 🤖 AI Backtesting Engine
 
 A comprehensive backtesting engine with machine learning capabilities, built with FastAPI, PostgreSQL, and Streamlit.
 
