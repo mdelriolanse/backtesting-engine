@@ -15,8 +15,8 @@ import sys
 import json
 import uuid
 
-from simple_backtesting_engine import SimpleBacktestingEngine, BacktestResults
-from simple_ml_layer import ml_manager
+from backtesting_engine import SimpleBacktestingEngine, BacktestResults
+from ml_layer import ml_manager
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -112,12 +112,12 @@ async def get_available_symbols():
 async def get_price_data(symbol: str, limit: int = 100):
     """Get price data for a symbol"""
     try:
-        # Generate recent price data
+        # Fetch recent real price data
         engine = SimpleBacktestingEngine()
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
-        
-        price_data = engine.generate_sample_data(symbol, start_date, end_date)
+
+        price_data = engine.fetch_real_data(symbol, start_date, end_date)
         
         # Convert to the format expected by frontend
         prices = []
@@ -279,9 +279,9 @@ async def get_trades(strategy: Optional[str] = None, symbol: Optional[str] = Non
 async def train_ml_models(symbol: str):
     """Train ML models for a symbol"""
     try:
-        # Generate sample price data for training
+        # Fetch real market data for training
         engine = SimpleBacktestingEngine()
-        price_data = engine.generate_sample_data(symbol, "2023-01-01", "2024-12-31")
+        price_data = engine.fetch_real_data(symbol, "2023-01-01", "2024-12-31")
         
         # Convert to the format expected by ML manager
         ml_data = []
@@ -316,7 +316,7 @@ async def get_ml_signals(symbol: str, limit: int = 100):
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
         
-        price_data = engine.generate_sample_data(symbol, start_date, end_date)
+        price_data = engine.fetch_real_data(symbol, start_date, end_date)
         
         # Convert to the format expected by ML manager
         ml_data = []
@@ -399,7 +399,7 @@ if __name__ == "__main__":
     
     # Run the API
     uvicorn.run(
-        "src.api_simple:app",
+        "src.api:app",
         host=os.getenv('API_HOST', '0.0.0.0'),
         port=int(os.getenv('API_PORT', 8000)),
         reload=os.getenv('API_DEBUG', 'False').lower() == 'true'

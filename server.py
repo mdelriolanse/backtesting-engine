@@ -19,7 +19,7 @@ def main():
     PORT = 8080
     
     # Check if the HTML file exists
-    html_file = "simple_frontend.html"
+    html_file = "frontend.html"
     if not os.path.exists(html_file):
         print(f"❌ Error: {html_file} not found!")
         return 1
@@ -28,7 +28,7 @@ def main():
     class CustomHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
             if self.path == '/' or self.path == '/index.html':
-                self.path = '/simple_frontend.html'
+                self.path = '/frontend.html'
             return super().do_GET()
     
     try:

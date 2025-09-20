@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
 import random
+import yfinance as yf
+import logging
 
 @dataclass
 class PriceData:
@@ -219,8 +221,42 @@ class SimpleBacktestingEngine:
             "bollinger_bands": BollingerBandsStrategy
         }
     
+    def fetch_real_data(self, symbol: str, start_date: str, end_date: str) -> List[PriceData]:
+        """Fetch real market data from Yahoo Finance"""
+        try:
+            logging.info(f"Fetching real data for {symbol} from {start_date} to {end_date}")
+            
+            # Download data from Yahoo Finance
+            ticker = yf.Ticker(symbol)
+            data = ticker.history(start=start_date, end=end_date)
+            
+            if data.empty:
+                logging.warning(f"No data found for {symbol}, falling back to sample data")
+                return self.generate_sample_data(symbol, start_date, end_date)
+            
+            # Convert to our PriceData format
+            price_data_list = []
+            for timestamp, row in data.iterrows():
+                price_data = PriceData(
+                    timestamp=timestamp.strftime('%Y-%m-%d'),
+                    open=float(row['Open']),
+                    high=float(row['High']),
+                    low=float(row['Low']),
+                    close=float(row['Close']),
+                    volume=int(row['Volume'])
+                )
+                price_data_list.append(price_data)
+            
+            logging.info(f"Successfully fetched {len(price_data_list)} data points for {symbol}")
+            return price_data_list
+            
+        except Exception as e:
+            logging.error(f"Error fetching real data for {symbol}: {e}")
+            logging.info(f"Falling back to sample data for {symbol}")
+            return self.generate_sample_data(symbol, start_date, end_date)
+    
     def generate_sample_data(self, symbol: str, start_date: str, end_date: str) -> List[PriceData]:
-        """Generate sample price data for testing"""
+        """Generate sample price data for testing (fallback when real data fails)"""
         start = datetime.fromisoformat(start_date)
         end = datetime.fromisoformat(end_date)
         
@@ -278,8 +314,8 @@ class SimpleBacktestingEngine:
             
             strategy = self.strategies[strategy_name](parameters)
             
-            # Generate or load price data
-            price_data = self.generate_sample_data(symbol, start_date, end_date)
+            # Fetch real market data
+            price_data = self.fetch_real_data(symbol, start_date, end_date)
             
             if not price_data:
                 results.error = "No price data available"

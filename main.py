@@ -11,8 +11,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src.simple_backtesting_engine import SimpleBacktestingEngine
-from src.api_simple import app
+from backtesting_engine import SimpleBacktestingEngine
+from api import app
 import uvicorn
 
 def setup_logging(level=logging.INFO):
@@ -38,7 +38,7 @@ def run_api():
     print("API documentation: http://{host}:{port}/docs")
     
     uvicorn.run(
-        "src.api_simple:app",
+        "src.api:app",
         host=host,
         port=port,
         reload=debug
