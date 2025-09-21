@@ -210,6 +210,48 @@ class SimpleMLPredictor:
             logger.error(f"Error making predictions: {e}")
             raise e
 
+    def predict_series(self, df: pd.DataFrame, every_n: int = 1) -> List[Dict]:
+        """Generate predictions across the series, optionally sampling every_n rows"""
+        if not self.is_trained:
+            raise ValueError("Models not trained yet")
+        try:
+            df_features = self.prepare_features(df)
+            df_clean = df_features.dropna()
+            if df_clean.empty:
+                return []
+            X_all = df_clean[self.feature_columns]
+            X_scaled = self.scaler.transform(X_all)
+            price_preds = self.price_predictor.predict(X_scaled)
+            direction_preds = self.direction_predictor.predict(X_scaled)
+            direction_probas = self.direction_predictor.predict_proba(X_scaled)
+            results = []
+            for idx, (ts, row) in enumerate(df_clean.iterrows()):
+                if every_n > 1 and (idx % every_n) != 0:
+                    continue
+                price_pred = float(price_preds[idx])
+                direction_pred = int(direction_preds[idx])
+                confidence = float(max(direction_probas[idx]))
+                current_price = float(row['close'])
+                price_change_pct = (price_pred - current_price) / current_price if current_price else 0.0
+                if direction_pred == 1 and price_change_pct > 0.01:
+                    signal_type = "BUY"
+                elif direction_pred == 0 and price_change_pct < -0.01:
+                    signal_type = "SELL"
+                else:
+                    signal_type = "HOLD"
+                results.append({
+                    "timestamp": ts.isoformat(),
+                    "model_name": "RandomForest",
+                    "prediction": price_pred,
+                    "confidence": confidence,
+                    "signal_type": signal_type,
+                    "price_change_pct": price_change_pct
+                })
+            return results
+        except Exception as e:
+            logger.error(f"Error making series predictions: {e}")
+            raise e
+
 class SimpleMLManager:
     """Simple ML manager for the backtesting engine"""
     
@@ -240,8 +282,8 @@ class SimpleMLManager:
             logger.error(f"Error training models for {symbol}: {e}")
             raise e
     
-    def generate_signals(self, symbol: str, price_data: List[Dict]) -> List[Dict]:
-        """Generate ML signals for a symbol"""
+    def generate_signals(self, symbol: str, price_data: List[Dict], every_n: int = 1) -> List[Dict]:
+        """Generate ML signals for a symbol. If every_n>1, return a sampled series."""
         try:
             if symbol not in self.predictors or not self.predictors[symbol].is_trained:
                 return []
@@ -252,7 +294,10 @@ class SimpleMLManager:
             df.set_index('timestamp', inplace=True)
             
             # Generate predictions
-            signals = self.predictors[symbol].predict(df)
+            if every_n and every_n > 1:
+                signals = self.predictors[symbol].predict_series(df, every_n=every_n)
+            else:
+                signals = self.predictors[symbol].predict(df)
             return signals
             
         except Exception as e:

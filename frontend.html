@@ -165,6 +165,19 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="interval">Interval:</label>
+                        <select id="interval">
+                            <option value="1d">1 Day</option>
+                            <option value="1wk">1 Week</option>
+                            <option value="1mo">1 Month</option>
+                            <option value="60m">1 Hour</option>
+                            <option value="15m">15 Minutes</option>
+                            <option value="5m">5 Minutes</option>
+                            <option value="1m">1 Minute</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="shortPeriod">Short Period (for MA strategy):</label>
                         <input type="number" id="shortPeriod" value="10" min="5" max="50">
                     </div>
@@ -200,6 +213,22 @@
                     <option value="MSFT">MSFT</option>
                     <option value="TSLA">TSLA</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label for="mlInterval">ML Interval:</label>
+                <select id="mlInterval">
+                    <option value="1d">1 Day</option>
+                    <option value="1wk">1 Week</option>
+                    <option value="1mo">1 Month</option>
+                    <option value="60m">1 Hour</option>
+                    <option value="15m">15 Minutes</option>
+                    <option value="5m">5 Minutes</option>
+                    <option value="1m">1 Minute</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="mlEveryN">Signal cadence (every N bars):</label>
+                <input type="number" id="mlEveryN" value="1" min="1">
             </div>
             <button onclick="trainMLModels()">Train ML Models</button>
             <button onclick="loadMLSignals()">Load ML Signals</button>
@@ -264,7 +293,8 @@
                 start_date: document.getElementById('startDate').value,
                 end_date: document.getElementById('endDate').value,
                 initial_capital: parseFloat(document.getElementById('initialCapital').value),
-                parameters: {}
+                parameters: {},
+                interval: document.getElementById('interval').value
             };
             
             // Set strategy-specific parameters
@@ -473,19 +503,22 @@
 
         async function loadMLSignals() {
             const symbol = document.getElementById('mlSymbol').value;
+            const interval = document.getElementById('mlInterval') ? document.getElementById('mlInterval').value : '1d';
+            const everyN = document.getElementById('mlEveryN') ? parseInt(document.getElementById('mlEveryN').value) : 1;
             const resultsDiv = document.getElementById('mlResults');
             resultsDiv.innerHTML = '<div class="loading">🔄 Loading ML signals...</div>';
 
             try {
-                const response = await fetch(`${API_BASE}/ml/signals/${symbol}`);
+                const params = new URLSearchParams({ interval, every_n: String(everyN) });
+                const response = await fetch(`${API_BASE}/ml/signals/${symbol}?${params.toString()}`);
                 if (response.ok) {
                     const data = await response.json();
                     const signals = data.signals || [];
                     
                     if (signals.length > 0) {
-                        let html = `<h3>ML Signals for ${symbol}</h3><table><tr><th>Timestamp</th><th>Model</th><th>Prediction</th><th>Confidence</th><th>Signal Type</th></tr>`;
+                        let html = `<h3>ML Signals for ${symbol} (${interval}, every ${everyN})</h3><table><tr><th>Timestamp</th><th>Model</th><th>Prediction</th><th>Confidence</th><th>Signal Type</th></tr>`;
                         
-                        signals.slice(0, 10).forEach(signal => {
+                        signals.slice(0, 50).forEach(signal => {
                             html += `<tr>
                                 <td>${new Date(signal.timestamp).toLocaleDateString()}</td>
                                 <td>${signal.model_name}</td>
