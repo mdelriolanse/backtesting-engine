@@ -50,6 +50,7 @@ class BacktestRequest(BaseModel):
     end_date: str
     initial_capital: float = 100000.0
     parameters: Dict[str, Any] = {}
+    interval: str = "1d"
 
 class BacktestResponse(BaseModel):
     id: str
@@ -109,7 +110,7 @@ async def get_available_symbols():
     return {"symbols": ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "NVDA"]}
 
 @app.get("/data/prices/{symbol}")
-async def get_price_data(symbol: str, limit: int = 100):
+async def get_price_data(symbol: str, limit: int = 100, interval: str = "1d"):
     """Get price data for a symbol"""
     try:
         # Fetch recent real price data
@@ -117,7 +118,7 @@ async def get_price_data(symbol: str, limit: int = 100):
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
 
-        price_data = engine.fetch_real_data(symbol, start_date, end_date)
+        price_data = engine.fetch_real_data(symbol, start_date, end_date, interval)
         
         # Convert to the format expected by frontend
         prices = []
@@ -165,7 +166,8 @@ async def run_backtest(request: BacktestRequest, background_tasks: BackgroundTas
             request.start_date,
             request.end_date,
             request.initial_capital,
-            request.parameters
+            request.parameters,
+            request.interval
         )
         
         return BacktestResponse(
@@ -308,7 +310,7 @@ async def train_ml_models(symbol: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/ml/signals/{symbol}")
-async def get_ml_signals(symbol: str, limit: int = 100):
+async def get_ml_signals(symbol: str, limit: int = 100, interval: str = "1d", every_n: int = 1):
     """Get ML-generated signals"""
     try:
         # Generate recent price data for prediction
@@ -316,7 +318,7 @@ async def get_ml_signals(symbol: str, limit: int = 100):
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
         
-        price_data = engine.fetch_real_data(symbol, start_date, end_date)
+        price_data = engine.fetch_real_data(symbol, start_date, end_date, interval)
         
         # Convert to the format expected by ML manager
         ml_data = []
@@ -331,7 +333,7 @@ async def get_ml_signals(symbol: str, limit: int = 100):
             })
         
         # Generate signals
-        signals = ml_manager.generate_signals(symbol, ml_data)
+        signals = ml_manager.generate_signals(symbol, ml_data, every_n=every_n)
         
         return {"signals": signals[:limit]}
         
@@ -353,7 +355,7 @@ async def get_ml_status(symbol: str):
 # Background task functions
 async def execute_backtest(run_id: str, strategy: str, symbol: str, 
                           start_date: str, end_date: str, initial_capital: float, 
-                          parameters: Dict[str, Any]):
+                          parameters: Dict[str, Any], interval: str):
     """Execute backtest in background"""
     try:
         logger.info(f"Starting backtest {run_id}: {strategy} on {symbol}")
@@ -365,7 +367,7 @@ async def execute_backtest(run_id: str, strategy: str, symbol: str,
         # Create engine and run backtest
         engine = SimpleBacktestingEngine()
         results = engine.run_backtest(
-            strategy, symbol, start_date, end_date, initial_capital, parameters
+            strategy, symbol, start_date, end_date, initial_capital, parameters, interval
         )
         
         logger.info(f"Backtest {run_id} completed. Error: {results.error}")

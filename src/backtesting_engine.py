@@ -221,24 +221,26 @@ class SimpleBacktestingEngine:
             "bollinger_bands": BollingerBandsStrategy
         }
     
-    def fetch_real_data(self, symbol: str, start_date: str, end_date: str) -> List[PriceData]:
+    def fetch_real_data(self, symbol: str, start_date: str, end_date: str, interval: str = "1d") -> List[PriceData]:
         """Fetch real market data from Yahoo Finance"""
         try:
-            logging.info(f"Fetching real data for {symbol} from {start_date} to {end_date}")
+            logging.info(f"Fetching real data for {symbol} from {start_date} to {end_date} interval={interval}")
             
             # Download data from Yahoo Finance
             ticker = yf.Ticker(symbol)
-            data = ticker.history(start=start_date, end=end_date)
+            data = ticker.history(start=start_date, end=end_date, interval=interval)
             
             if data.empty:
                 logging.warning(f"No data found for {symbol}, falling back to sample data")
-                return self.generate_sample_data(symbol, start_date, end_date)
+                return self.generate_sample_data(symbol, start_date, end_date, interval)
             
             # Convert to our PriceData format
             price_data_list = []
             for timestamp, row in data.iterrows():
+                # Preserve time precision when available
+                ts = timestamp.to_pydatetime().isoformat() if hasattr(timestamp, "to_pydatetime") else str(timestamp)
                 price_data = PriceData(
-                    timestamp=timestamp.strftime('%Y-%m-%d'),
+                    timestamp=ts,
                     open=float(row['Open']),
                     high=float(row['High']),
                     low=float(row['Low']),
@@ -253,9 +255,9 @@ class SimpleBacktestingEngine:
         except Exception as e:
             logging.error(f"Error fetching real data for {symbol}: {e}")
             logging.info(f"Falling back to sample data for {symbol}")
-            return self.generate_sample_data(symbol, start_date, end_date)
+            return self.generate_sample_data(symbol, start_date, end_date, interval)
     
-    def generate_sample_data(self, symbol: str, start_date: str, end_date: str) -> List[PriceData]:
+    def generate_sample_data(self, symbol: str, start_date: str, end_date: str, interval: str = "1d") -> List[PriceData]:
         """Generate sample price data for testing (fallback when real data fails)"""
         start = datetime.fromisoformat(start_date)
         end = datetime.fromisoformat(end_date)
@@ -263,6 +265,34 @@ class SimpleBacktestingEngine:
         data = []
         current_date = start
         base_price = 100.0
+        
+        # Determine step based on interval
+        def _step_for_interval(iv: str) -> timedelta:
+            try:
+                if iv.endswith('d') and iv[:-1].isdigit():
+                    return timedelta(days=int(iv[:-1]))
+            except Exception:
+                pass
+            if iv in ("1wk", "1w"):
+                return timedelta(days=7)
+            if iv == "1mo":
+                return timedelta(days=30)
+            if iv == "3mo":
+                return timedelta(days=90)
+            if iv in ("60m", "1h"):
+                return timedelta(hours=1)
+            if iv == "90m":
+                return timedelta(minutes=90)
+            if iv == "30m":
+                return timedelta(minutes=30)
+            if iv == "15m":
+                return timedelta(minutes=15)
+            if iv == "5m":
+                return timedelta(minutes=5)
+            if iv == "1m":
+                return timedelta(minutes=1)
+            return timedelta(days=1)
+        step = _step_for_interval(interval)
         
         while current_date <= end:
             # Random walk with some trend
@@ -279,12 +309,12 @@ class SimpleBacktestingEngine:
             )
             
             data.append(price_data)
-            current_date += timedelta(days=1)
+            current_date += step
         
         return data
     
     def run_backtest(self, strategy_name: str, symbol: str, start_date: str, 
-                    end_date: str, initial_capital: float, parameters: Dict[str, float]) -> BacktestResults:
+                    end_date: str, initial_capital: float, parameters: Dict[str, float], interval: str = "1d") -> BacktestResults:
         """Run a backtest with the specified parameters"""
         
         results = BacktestResults(
@@ -315,7 +345,7 @@ class SimpleBacktestingEngine:
             strategy = self.strategies[strategy_name](parameters)
             
             # Fetch real market data
-            price_data = self.fetch_real_data(symbol, start_date, end_date)
+            price_data = self.fetch_real_data(symbol, start_date, end_date, interval)
             
             if not price_data:
                 results.error = "No price data available"
@@ -363,14 +393,14 @@ class SimpleBacktestingEngine:
             results.total_return = (results.final_capital - initial_capital) / initial_capital
             
             # Calculate performance metrics
-            self._calculate_metrics(results, price_data)
+            self._calculate_metrics(results, price_data, interval)
             
         except Exception as e:
             results.error = f"Error during backtest: {str(e)}"
         
         return results
     
-    def _calculate_metrics(self, results: BacktestResults, price_data: List[PriceData]):
+    def _calculate_metrics(self, results: BacktestResults, price_data: List[PriceData], interval: str):
         """Calculate performance metrics"""
         if not results.portfolio_values:
             return
@@ -381,8 +411,34 @@ class SimpleBacktestingEngine:
         
         # Sharpe ratio
         if len(returns) > 0 and np.std(returns) > 0:
-            risk_free_rate = 0.02 / 252  # Daily risk-free rate
-            results.sharpe_ratio = (np.mean(returns) - risk_free_rate) / np.std(returns) * np.sqrt(252)
+            # Determine periods per year based on interval
+            def _periods_per_year(iv: str) -> float:
+                if iv == "1d":
+                    return 252.0
+                if iv == "5d":
+                    return 252.0 / 5.0
+                if iv in ("1wk", "1w"):
+                    return 52.0
+                if iv == "1mo":
+                    return 12.0
+                if iv == "3mo":
+                    return 4.0
+                if iv in ("60m", "1h"):
+                    return 252.0 * 6.5
+                if iv == "90m":
+                    return 252.0 * (6.5 * 60.0 / 90.0)
+                if iv == "30m":
+                    return 252.0 * (6.5 * 60.0 / 30.0)
+                if iv == "15m":
+                    return 252.0 * (6.5 * 60.0 / 15.0)
+                if iv == "5m":
+                    return 252.0 * (6.5 * 60.0 / 5.0)
+                if iv == "1m":
+                    return 252.0 * 6.5 * 60.0
+                return 252.0
+            periods = _periods_per_year(interval)
+            risk_free_rate = 0.02 / periods
+            results.sharpe_ratio = (np.mean(returns) - risk_free_rate) / np.std(returns) * np.sqrt(periods)
         
         # Max drawdown
         peak = results.initial_capital
